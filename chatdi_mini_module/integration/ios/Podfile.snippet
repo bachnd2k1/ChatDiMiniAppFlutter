@@ -1,0 +1,112 @@
+# =============================================================================
+# Podfile mẫu — app host iOS tích hợp module Flutter `chatdi_mini_module`
+# =============================================================================
+# Cách dùng:
+# 1. Copy toàn bộ nội dung (từ `source` … đến hết `end` cuối) vào `ios/Podfile` của app host
+#    (ví dụ TestMiniAppFlutter).
+# 2. Chỉnh `flutter_chatdi_module_path` trỏ đúng thư mục gốc module (có `pubspec.yaml`).
+#    Trước đó trong thư mục module chạy: `flutter pub get` (để có `.ios/`).
+# 3. Đổi `target 'TestMiniAppFlutter'` cho khớp tên target Xcode của app host.
+# 4. Trong thư mục `ios` của host: `pod install` (hoặc `pod install --repo-update`).
+#
+# Nếu vẫn crash objective_c (x86_64 vs arm64): xóa DerivedData + Pods rồi cài lại:
+#   rm -rf ~/Library/Developer/Xcode/DerivedData/TestMiniAppFlutter-*
+#   cd ios && rm -rf Pods Podfile.lock build && pod install
+#
+# Kiểm tra Xcode không chạy Rosetta (Finder → Xcode.app → Get Info → bỏ "Open using Rosetta").
+# Trong repo host, tìm chỗ còn exclude arm64: `grep -r EXCLUDED_ARCHS . --include='*.pbxproj' --include='*.xcconfig'`
+#
+# `post_install` ghi đè: Pods + **project-level** + target app trong .xcodeproj host; trên Mac
+# arm64 còn ép `ARCHS` simulator = arm64 (tránh vẫn link ra slice x86_64).
+# =============================================================================
+
+source 'https://cdn.cocoapods.org/'
+
+platform :ios, '15.0'
+
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+# --- Đường dẫn module Flutter (BẮT BUỘC: 1 dòng gán phải MỞ, không comment) ---
+# Nếu comment `flutter_chatdi_module_path` mà vẫn `load File.join(flutter_chatdi_module_path, ...)`
+# → `pod install` lỗi undefined variable.
+
+# Cách A — tương đối từ `ios/` của host (khuyến nghị khi commit Podfile).
+# Ví dụ cây thư mục:
+#   MyProject/
+#     chatdi_mini_module/     ← pubspec.yaml
+#     TestMiniAppFlutter/
+#       ios/
+#         Podfile             ← __dir__ = .../TestMiniAppFlutter/ios
+flutter_chatdi_module_path = File.expand_path('../../chatdi_mini_module', __dir__)
+
+# Cách B — tuyệt đối (bật nếu host không nằm cạnh module; không nên commit nếu team khác máy):
+# flutter_chatdi_module_path = File.expand_path(
+#   '/Users/nghiemdinhbach/Documents/MyProject/chatdi_mini_module',
+#   __dir__
+# )
+
+load File.join(flutter_chatdi_module_path, '.ios', 'Flutter', 'podhelper.rb')
+
+target 'TestMiniAppFlutter' do
+  # Static linkage: tránh lỗi FlutterPluginRegistrant / module Swift plugin (vd. shared_preferences_foundation).
+  use_frameworks! :linkage => :static
+
+  # Pods native khác của host (bỏ comment khi cần):
+  # pod 'Alamofire'
+
+  install_all_flutter_pods flutter_chatdi_module_path
+end
+
+post_install do |installer|
+  flutter_post_install(installer)
+
+  # Apple Silicon simulator: framework phải có slice arm64. Không được exclude arm64
+  # cho iphonesimulator (template cũ hay đặt `arm64` ở đây → Pods chỉ ra x86_64).
+  sim_excluded = 'i386'
+  arm64_host = (`uname -m`.strip == 'arm64')
+
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = sim_excluded
+  end
+
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = sim_excluded
+      if arm64_host
+        config.build_settings['ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      end
+    end
+  end
+
+  # Host .xcodeproj: cả **PROJECT** (Debug/Release ở dòng project xanh) lẫn target app.
+  user_projects = {}
+  installer.aggregate_targets.each do |aggregate_target|
+    user_projects[aggregate_target.user_project.path.to_s] = aggregate_target.user_project
+  end
+
+  user_projects.each_value do |project|
+    bcl = project.root_object.build_configuration_list
+    next unless bcl
+
+    bcl.build_configurations.each do |config|
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = sim_excluded
+      if arm64_host
+        config.build_settings['ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      end
+    end
+
+    project.targets.each do |target|
+      next unless target.respond_to?(:product_type) && target.product_type == 'com.apple.product-type.application'
+
+      target.build_configurations.each do |config|
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = sim_excluded
+        if arm64_host
+          config.build_settings['ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        end
+      end
+    end
+
+    project.save
+  end
+end

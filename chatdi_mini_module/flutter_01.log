@@ -1,0 +1,86 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter analyze lib/
+
+## exception
+
+_Exception: Exception: analysis server exited with code 64 and output:
+[stderr] Project
+[stderr]   build       Build a Dart application including code assets.
+[stderr]   compile     Compile Dart to various formats.
+[stderr]   create      Create a new Dart project.
+[stderr]   pub         Work with packages.
+[stderr]   run         Run a Dart program.
+[stderr]   test        Run tests for a project.
+[stderr] 
+[stderr] Source code
+[stderr]   analyze     Analyze Dart code in a directory.
+[stderr]   doc         Generate API documentation for Dart projects.
+[stderr]   fix         Apply automated fixes to Dart source code.
+[stderr]   format      Idiomatically format Dart source code.
+[stderr] 
+[stderr] Tools
+[stderr]   devtools    Open DevTools (optionally connecting to an existing application).
+[stderr]   info        Show diagnostic information about the installed tooling.
+[stderr] 
+[stderr] Run "dart help <command>" for more information about a command.
+[stderr] See https://dart.dev/tools/dart-tool for detailed documentation.
+
+```
+```
+
+## flutter doctor
+
+```
+[✓] Flutter (Channel stable, 3.38.9, on macOS 15.7.4 24G517 darwin-arm64, locale en-VN) [630ms]
+    • Flutter version 3.38.9 on channel stable at /Users/nghiemdinhbach/flutter
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision 67323de285 (3 months ago), 2026-01-28 13:43:12 -0800
+    • Engine revision 587c18f873
+    • Dart version 3.10.8
+    • DevTools version 2.51.1
+    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, omit-legacy-version-file, enable-lldb-debugging
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 37.0.0) [2.3s]
+    • Android SDK at /Users/nghiemdinhbach/Library/Android/sdk
+    • Emulator version 36.3.10.0 (build_id 14472402) (CL:N/A)
+    • Platform android-37.0, build-tools 37.0.0
+    • ANDROID_HOME = /Users/nghiemdinhbach/Library/Android/sdk
+    • ANDROID_SDK_ROOT = /Users/nghiemdinhbach/Library/Android/sdk
+    • Java binary at: /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java
+      This is the JDK bundled with the latest Android Studio installation on this machine.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    • Java version OpenJDK Runtime Environment (build 21.0.8+-14196175-b1038.72)
+    • All Android licenses accepted.
+
+[✓] Xcode - develop for iOS and macOS (Xcode 26.3) [1,430ms]
+    • Xcode at /Applications/Xcode.app/Contents/Developer
+    • Build 17C529
+    • CocoaPods version 1.16.2
+
+[✓] Chrome - develop for the web [6ms]
+    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+
+[✓] Connected device (8 available) [7.4s]
+    • EXV-IOS-024 (wireless) (mobile) • 00008140-00161CDC2101401C            • ios            • iOS 18.6.2 22G100
+    • EXV-IOS-042 (wireless) (mobile) • 00008020-000568801A81402E            • ios            • iOS 18.4.1 22E252
+    • EXV-IOS-013 (wireless) (mobile) • 00008110-00163CD23EF2801E            • ios            • iOS 26.0 23A340
+    • EXV-IOS-012 (wireless) (mobile) • 00008020-000C19612686002E            • ios            • iOS 17.1.1 21B91
+    • EXV-IP003 (wireless) (mobile)   • 00008110-001A016A3462801E            • ios            • iOS 17.0 21A329
+    • iPhone 17 Pro (mobile)          • 4F99166F-C544-4FDF-9DB0-62227FCDD30F • ios            • com.apple.CoreSimulator.SimRuntime.iOS-26-3 (simulator)
+    • macOS (desktop)                 • macos                                • darwin-arm64   • macOS 15.7.4 24G517 darwin-arm64
+    • Chrome (web)                    • chrome                               • web-javascript • Google Chrome 148.0.7778.97
+    ! Error: Browsing on the local area network for Bach’s Apple Watch. Ensure the device is unlocked and discoverable via Bluetooth. (code -27)
+    ! Error: Browsing on the local area network for Bach. Ensure the device is unlocked and attached with a cable or associated with the same local area network as this Mac.
+      The device must be opted into Developer Mode to connect wirelessly. (code -27)
+    ! Error: Browsing on the local area network for iPhone. Ensure the device is unlocked and attached with a cable or associated with the same local area network as this Mac.
+      The device must be opted into Developer Mode to connect wirelessly. (code -27)
+
+[✓] Network resources [414ms]
+    • All expected network resources are available.
+
+• No issues found!
+```
