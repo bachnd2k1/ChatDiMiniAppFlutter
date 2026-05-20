@@ -4,6 +4,7 @@ abstract final class ApiConstants {
   static const String ssePath = '/sse';
 
   static const categories = '/categories';
+  static const dynamicGroupedStyles = '/dynamic/grouped-styles';
   static const imageStyles = '/image-styles';
   static const imageGenerators = '/image-generators';
   static const characters = '/characters';

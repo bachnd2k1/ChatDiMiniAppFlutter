@@ -30,6 +30,32 @@ class SessionProvider extends ChangeNotifier {
       (sessionId?.isNotEmpty ?? false) &&
       (deviceId?.isNotEmpty ?? false);
 
+  Future<String?> ensureConnectedSession({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (canSendMessages) return sessionId;
+
+    if (!_lifecycleActive || !isConnected || sessionId == null || sessionId!.isEmpty) {
+      await startChatLifecycle();
+    }
+    if (canSendMessages) return sessionId;
+
+    final completer = Completer<String?>();
+    void waitForConnection() {
+      if (!completer.isCompleted && canSendMessages) {
+        completer.complete(sessionId);
+      }
+    }
+
+    addListener(waitForConnection);
+    waitForConnection();
+    try {
+      return await completer.future.timeout(timeout, onTimeout: () => null);
+    } finally {
+      removeListener(waitForConnection);
+    }
+  }
+
   Future<void> startChatLifecycle() async {
     _lifecycleActive = true;
     deviceId = await DeviceIdService.instance.getOrCreate();

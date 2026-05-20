@@ -15,12 +15,16 @@ class CatalogProvider extends ChangeNotifier {
   List<ImageGeneratorModel> imageGenerators = [];
   List<CharacterModel> characters = [];
   List<ImageStyle> chatImageStyles = [];
+  List<Map<String, dynamic>> homeDynamicGroupedStyles = [];
   bool _chatStylesLoaded = false;
+  bool _homeDynamicStylesLoaded = false;
 
   bool categoriesLoading = false;
   bool imageGeneratorsLoading = false;
   bool charactersLoading = false;
+  bool homeDynamicStylesLoading = false;
   Object? categoriesError;
+  Object? homeDynamicStylesError;
 
   Future<void> ensureCategoriesLoaded({bool forceRefresh = false}) async {
     if (categoriesLoading) return;
@@ -79,5 +83,29 @@ class CatalogProvider extends ChangeNotifier {
     chatImageStyles = list;
     _chatStylesLoaded = true;
     notifyListeners();
+  }
+
+  Future<void> ensureHomeDynamicStylesLoaded({
+    required String sessionId,
+    bool forceRefresh = false,
+  }) async {
+    if (homeDynamicStylesLoading) return;
+    if (!forceRefresh && _homeDynamicStylesLoaded && homeDynamicGroupedStyles.isNotEmpty) {
+      return;
+    }
+    homeDynamicStylesLoading = true;
+    homeDynamicStylesError = null;
+    notifyListeners();
+    try {
+      homeDynamicGroupedStyles = await _repo.getDynamicGroupedStyles(
+        sessionId: sessionId,
+      );
+      _homeDynamicStylesLoaded = true;
+    } catch (e) {
+      homeDynamicStylesError = e;
+    } finally {
+      homeDynamicStylesLoading = false;
+      notifyListeners();
+    }
   }
 }

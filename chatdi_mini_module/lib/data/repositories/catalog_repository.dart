@@ -16,6 +16,16 @@ class CatalogRepository {
     return asJsonObjectList(raw).map(Category.fromJson).toList();
   }
 
+  Future<List<Map<String, dynamic>>> getDynamicGroupedStyles({
+    required String sessionId,
+  }) async {
+    final raw = await _api.getJson(
+      ApiConstants.dynamicGroupedStyles,
+      sessionId: sessionId,
+    );
+    return asJsonObjectList(raw);
+  }
+
   Future<List<ImageStyle>> getImageStyles() async {
     final raw = await _api.getJson(ApiConstants.imageStyles);
     return asJsonObjectList(raw).map(ImageStyle.fromJson).toList();

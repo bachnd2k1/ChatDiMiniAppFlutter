@@ -34,12 +34,14 @@ Future<void> miniAppMain() async {
 Future<void> runChatDiApp({String initialRoute = AppRoutes.splash}) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await initLocalDb();
-
-  await DeviceIdService.instance.getOrCreate();
-
+  // Run independent I/O in parallel — sequential awaits here blocked the first
+  // frame and showed a black screen for several seconds on mini-app cold start.
   final appConfig = AppConfigProvider();
-  await appConfig.hydrate();
+  await Future.wait<void>([
+    initLocalDb(),
+    DeviceIdService.instance.getOrCreate(),
+    appConfig.hydrate(),
+  ]);
 
   final apiClient = ApiClient(acceptLanguage: appConfig.languageCode);
   apiClient.setDeviceIdFuture(DeviceIdService.instance.getOrCreate());

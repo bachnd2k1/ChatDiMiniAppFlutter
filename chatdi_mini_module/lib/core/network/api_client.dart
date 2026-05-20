@@ -62,8 +62,14 @@ class ApiClient {
 
   Uri _uri(String path) => Uri.parse('${ApiConstants.baseUrl}$path');
 
-  Future<dynamic> getJson(String path) async {
-    final res = await _http.get(_uri(path), headers: await _withSession(deviceOnly: true));
+  Future<dynamic> getJson(String path, {String? sessionId}) async {
+    final res = await _http.get(
+      _uri(path),
+      headers: await _withSession(
+        sessionId: sessionId,
+        deviceOnly: sessionId == null || sessionId.isEmpty,
+      ),
+    );
     final map = decodeMap(res.body);
     if (res.statusCode < 200 || res.statusCode >= 300 || map == null) {
       throw ApiException(statusCode: res.statusCode, body: res.body);

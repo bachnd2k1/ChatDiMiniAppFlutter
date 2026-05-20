@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../mini_app_integration.dart';
 import '../providers/catalog_provider.dart';
 import 'history_screen.dart';
-import 'home_screen.dart';
+import 'home/home_screen.dart';
 import 'channel/assistants_screen.dart';
 import 'channel/characters_screen.dart';
 import 'channel/image_generators_screen.dart';
