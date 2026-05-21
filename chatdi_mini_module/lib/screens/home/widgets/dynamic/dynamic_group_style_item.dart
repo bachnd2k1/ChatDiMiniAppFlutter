@@ -9,7 +9,6 @@ class DynamicGroupStyleItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final thumb = '${item['thumbnail'] ?? ''}';
-    final name = '${item['name'] ?? ''}';
 
     return SizedBox(
       width: width,

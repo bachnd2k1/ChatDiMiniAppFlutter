@@ -16,6 +16,7 @@ class CatalogProvider extends ChangeNotifier {
   List<CharacterModel> characters = [];
   List<ImageStyle> chatImageStyles = [];
   List<Map<String, dynamic>> homeDynamicGroupedStyles = [];
+  List<String> trendings = [];
   bool _chatStylesLoaded = false;
   bool _homeDynamicStylesLoaded = false;
 
@@ -28,12 +29,13 @@ class CatalogProvider extends ChangeNotifier {
 
   Future<void> ensureCategoriesLoaded({bool forceRefresh = false}) async {
     if (categoriesLoading) return;
-    if (!forceRefresh && categories.isNotEmpty) return;
+    if (!forceRefresh && categories.isNotEmpty && trendings.isNotEmpty) return;
     categoriesLoading = true;
     categoriesError = null;
     notifyListeners();
     try {
       categories = await _repo.getCategories();
+      trendings = await getRandomCategories(categories);
     } catch (e) {
       categoriesError = e;
     } finally {
@@ -90,7 +92,9 @@ class CatalogProvider extends ChangeNotifier {
     bool forceRefresh = false,
   }) async {
     if (homeDynamicStylesLoading) return;
-    if (!forceRefresh && _homeDynamicStylesLoaded && homeDynamicGroupedStyles.isNotEmpty) {
+    if (!forceRefresh &&
+        _homeDynamicStylesLoaded &&
+        homeDynamicGroupedStyles.isNotEmpty) {
       return;
     }
     homeDynamicStylesLoading = true;
@@ -107,5 +111,33 @@ class CatalogProvider extends ChangeNotifier {
       homeDynamicStylesLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<List<String>> getRandomCategories(
+    List<Category> categoriesList, {
+    int count = 4,
+  }) async {
+    if (categoriesList.isEmpty) {
+      return ["Hello"];
+    }
+
+    final shuffled = [...categoriesList]..shuffle();
+    final selectedCount = min(count, shuffled.length);
+    final newCategories = shuffled.take(selectedCount).toList();
+
+    final List<String> newTrendings = [];
+
+    for (final category in newCategories) {
+      final suggestions = (category.suggestion ?? '')
+          .split('\n')
+          .map((item) => item.replaceAll('- ', '').trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+
+      newTrendings.addAll(suggestions);
+    }
+
+    final shuffledTrendings = [...newTrendings]..shuffle();
+    return shuffledTrendings;
   }
 }

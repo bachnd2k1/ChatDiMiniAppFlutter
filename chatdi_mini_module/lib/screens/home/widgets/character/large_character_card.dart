@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/models/character.dart';
+import '../../../../data/models/character.dart';
 import 'character_card_container.dart';
 
 class LargeCharacterCard extends StatelessWidget {
