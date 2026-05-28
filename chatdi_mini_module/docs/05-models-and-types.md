@@ -49,8 +49,7 @@ Rating UI (popup) — local model.
 | `title` | string? |
 | `topic` | string? |
 | `character` | string? |
-| `lastMessage` | string? |
-| `lastMessageTime` | date? |
+| `messages` | `MessageChat[]` (list message trong conversation) |
 | `messageCount` | int |
 | `createdAt` / `updatedAt` | date |
 
@@ -66,6 +65,7 @@ Type TS: **`IConversation`**.
 | `type` | string (`text`, `image`, …) |
 | `imageUrl` | string? |
 | `isUser` | bool |
+| `isFromBot` | bool (`false`: message user gửi, `true`: message nhận từ SSE) |
 | `createdAt` / `updatedAt` | date |
 
 Type TS: **`IMessageChat`**.

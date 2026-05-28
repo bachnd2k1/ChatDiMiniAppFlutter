@@ -22,7 +22,7 @@ class ConversationLocalRepository {
       final inTitle = (c.title ?? '').toLowerCase().contains(qq);
       final inTopic = (c.topic ?? '').toLowerCase().contains(qq);
       final inCharName = (c.characterName ?? '').toLowerCase().contains(qq);
-      final inLast = (c.lastMessage ?? '').toLowerCase().contains(qq);
+      final inLast = lastMessagePreview(c).toLowerCase().contains(qq);
       return inTitle || inTopic || inCharName || inLast;
     }).toList();
   }
@@ -48,6 +48,7 @@ class ConversationLocalRepository {
       conversationId: conversationId,
       message: text,
       role: 'user',
+      isFromBot: false,
       type: 'text',
     );
     await _m.put(entity.id, entity);
@@ -60,9 +61,8 @@ class ConversationLocalRepository {
       topic: existing?.topic ?? topicId,
       characterId: existing?.characterId ?? characterId,
       characterName: existing?.characterName ?? characterName,
-      lastMessage: text,
-      lastMessageTime: now,
-      messageCount: existing == null ? 1 : existing.messageCount + 1,
+      messages: [...?existing?.messages, entity],
+      messageCount: (existing?.messages.length ?? 0) + 1,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
@@ -93,6 +93,7 @@ class ConversationLocalRepository {
       conversationId: conversationId,
       message: mergedText,
       role: role,
+      isFromBot: true,
       type: prev?.type ?? type,
       imageUrl: mergedImage,
       imageRemoteSource: mergedRemote,
@@ -105,8 +106,14 @@ class ConversationLocalRepository {
     final conv = _c.get(conversationId);
     if (conv == null) return;
 
-    final lastPreview =
-        mergedText.isEmpty ? (mergedImage ?? conv.lastMessage) : mergedText;
+    final mergedMessages = [...conv.messages];
+    final existingMessageIdx = mergedMessages.indexWhere((m) => m.id == messageId);
+    if (existingMessageIdx >= 0) {
+      mergedMessages[existingMessageIdx] = next;
+    } else {
+      mergedMessages.add(next);
+    }
+
     await _c.put(
       conversationId,
       ConversationEntity(
@@ -115,10 +122,8 @@ class ConversationLocalRepository {
         topic: conv.topic,
         characterId: conv.characterId,
         characterName: conv.characterName,
-        lastMessage: lastPreview ?? conv.lastMessage,
-        lastMessageTime: now,
-        messageCount:
-            prev == null ? conv.messageCount + 1 : conv.messageCount,
+        messages: mergedMessages,
+        messageCount: mergedMessages.length,
         createdAt: conv.createdAt,
         updatedAt: now,
       ),
@@ -126,7 +131,8 @@ class ConversationLocalRepository {
   }
 
   List<UiChatMessage> uiMessages(String conversationId) {
-    final rows = _m.values.where((x) => x.conversationId == conversationId).toList();
+    final rows = _c.get(conversationId)?.messages.toList() ??
+        _m.values.where((x) => x.conversationId == conversationId).toList();
     rows.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return rows
         .map(
@@ -140,6 +146,16 @@ class ConversationLocalRepository {
           ),
         )
         .toList();
+  }
+
+  String lastMessagePreview(ConversationEntity conversation) {
+    if (conversation.messages.isEmpty) return 'No message';
+    final userMessages =
+    conversation.messages.where((m) => !m.isFromBot).toList();
+    final row = userMessages.last;
+    if (row.type == 'image' && (row.message.trim().isEmpty)) return '[Image]';
+    final text = row.message.trim();
+    return text.isEmpty ? 'No message' : text;
   }
 
   Future<void> deleteConversation(String conversationId) async {

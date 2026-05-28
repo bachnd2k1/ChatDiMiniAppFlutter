@@ -5,8 +5,9 @@ import '../../core/utils/date_format.dart';
 
 class HistoryItem extends StatelessWidget {
   final ConversationEntity entity;
+  final String previewText;
 
-  const HistoryItem({super.key, required this.entity});
+  const HistoryItem({super.key, required this.entity, required this.previewText});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +44,7 @@ class HistoryItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entity.lastMessage ?? 'No message',
+                    previewText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
