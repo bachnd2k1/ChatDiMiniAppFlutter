@@ -64,12 +64,11 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   int index = 0;
 
-  final _pages = const [
+  static const _tabPages = [
     HomeScreen(),
     AssistantsScreen(),
     ImageGeneratorsScreen(),
     CharactersScreen(),
-    HistoryScreen(),
   ];
 
   @override
@@ -107,37 +106,47 @@ class _MainShellScreenState extends State<MainShellScreen> {
       },
       child: Scaffold(
         body: IndexedStack(
-          children: _pages,
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: index,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.support_agent),
-              label: 'Assistants',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.photo_outlined),
-              label: 'Image',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.face_outlined),
-              label: 'Characters',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.history),
-              label: 'History',
-            ),
+          index: index,
+          children: [
+            ..._tabPages,
+            HistoryScreen()
           ],
-          onDestinationSelected: (value) {
-            setState(() {
-              index = value;
-            });
-          },
+        ),
+        bottomNavigationBar: NavigationBarTheme(
+          data: const NavigationBarThemeData(
+            height: 48,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+          ),
+          child: NavigationBar(
+            selectedIndex: index,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.support_agent),
+                label: 'Assistants',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.photo_outlined),
+                label: 'Image',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.face_outlined),
+                label: 'Characters',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.history),
+                label: 'History',
+              ),
+            ],
+            onDestinationSelected: (value) {
+              setState(() {
+                index = value;
+              });
+            },
+          ),
         ),
       ),
     );

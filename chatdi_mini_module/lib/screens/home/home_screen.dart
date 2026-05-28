@@ -8,7 +8,7 @@ import '../../providers/session_provider.dart';
 import 'widgets/assistant/assistant_section.dart';
 import 'widgets/character/character_section.dart';
 import 'widgets/dynamic/dynamic_style_section.dart';
-import 'widgets/search_header.dart';
+import 'widgets/header/search_header.dart';
 import 'widgets/trendings/trending_section.dart';
 
 class HomeScreen extends StatefulWidget {
