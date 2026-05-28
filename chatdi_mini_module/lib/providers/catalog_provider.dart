@@ -18,7 +18,7 @@ class CatalogProvider extends ChangeNotifier {
   List<CharacterModel> characters = [];
   List<ImageStyle> chatImageStyles = [];
   List<Map<String, dynamic>> homeDynamicGroupedStyles = [];
-  List<String> trendings = [];
+  List<String> trends = [];
   bool _chatStylesLoaded = false;
   bool _homeDynamicStylesLoaded = false;
 
@@ -31,13 +31,13 @@ class CatalogProvider extends ChangeNotifier {
 
   Future<void> ensureCategoriesLoaded({bool forceRefresh = false}) async {
     if (categoriesLoading) return;
-    if (!forceRefresh && categories.isNotEmpty && trendings.isNotEmpty) return;
+    if (!forceRefresh && categories.isNotEmpty && trends.isNotEmpty) return;
     categoriesLoading = true;
     categoriesError = null;
     notifyListeners();
     try {
       categories = await _repo.getCategories();
-      trendings = await getRandomCategories(categories);
+      trends = await getRandomCategories(categories);
     } catch (e) {
       categoriesError = e;
     } finally {
@@ -127,7 +127,7 @@ class CatalogProvider extends ChangeNotifier {
     final selectedCount = min(count, shuffled.length);
     final newCategories = shuffled.take(selectedCount).toList();
 
-    final List<String> newTrendings = [];
+    final List<String> newTrends = [];
 
     for (final category in newCategories) {
       final suggestions = (category.suggestion ?? '')
@@ -136,10 +136,10 @@ class CatalogProvider extends ChangeNotifier {
           .where((item) => item.isNotEmpty)
           .toList();
 
-      newTrendings.addAll(suggestions);
+      newTrends.addAll(suggestions);
     }
 
-    final shuffledTrendings = [...newTrendings]..shuffle();
-    return shuffledTrendings;
+    final shuffledTrends = [...newTrends]..shuffle();
+    return shuffledTrends;
   }
 }

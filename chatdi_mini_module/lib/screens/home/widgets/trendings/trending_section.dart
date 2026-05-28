@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'trending_item.dart';
 
 class TrendingSection extends StatelessWidget {
-  const TrendingSection({super.key, required this.trendings});
+  const TrendingSection({super.key, required this.trends});
 
-  final List<String> trendings;
+  final List<String> trends;
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +35,10 @@ class TrendingSection extends StatelessWidget {
               scrollDirection: Axis.vertical,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: trendings.length,
+              itemCount: trends.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (ctx, index) =>
-                  TrendingItem(prompt: trendings[index]),
+                  TrendingItem(prompt: trends[index]),
             ),
           ),
         ],

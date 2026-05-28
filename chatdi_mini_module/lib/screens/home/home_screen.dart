@@ -129,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         isLoading: catalog.homeDynamicStylesLoading,
                         onTapGenerator: () {},
                       ),
-                      TrendingSection(trendings: catalog.trendings),
+                      TrendingSection(trends: catalog.trends),
                     ],
                   ),
                 ),
