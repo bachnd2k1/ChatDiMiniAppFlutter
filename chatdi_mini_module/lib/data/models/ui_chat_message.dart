@@ -1,5 +1,7 @@
 import 'package:uuid/uuid.dart';
 
+import 'chat_message_enums.dart';
+
 /// Bubble shown in chat UI.
 class UiChatMessage {
   UiChatMessage({
@@ -15,13 +17,12 @@ class UiChatMessage {
   factory UiChatMessage.userText(String content) => UiChatMessage(
         id: const Uuid().v4(),
         content: content,
-        role: 'user',
+        role: ChatMessageRole.user,
       );
 
   final String id;
   final String content;
-  /// `user` | `assistant`
-  final String role;
+  final ChatMessageRole role;
   /// Hiển thị: đường local sau khi tải, hoặc URL/data-uri tạm từ SSE.
   final String? imageUrl;
   /// SSE gốc (URL/base64…) — gửi lại API và lưu DB.
@@ -31,11 +32,11 @@ class UiChatMessage {
   /// True while optimistic / waiting for persistence
   final bool pending;
 
-  bool get isUser => role == 'user';
+  bool get isUser => role.isUser;
 
   UiChatMessage copyWith({
     String? content,
-    String? role,
+    ChatMessageRole? role,
     String? imageUrl,
     String? imageRemoteSource,
     bool? pending,

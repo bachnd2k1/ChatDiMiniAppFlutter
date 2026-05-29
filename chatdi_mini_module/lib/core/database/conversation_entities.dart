@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import '../../data/models/chat_message_enums.dart';
+
 /// Local conversation row (see docs/05-models Realm section).
 class ConversationEntity {
   ConversationEntity({
@@ -34,7 +36,7 @@ class ChatMessageEntity {
     required this.message,
     required this.role,
     required this.isFromBot,
-    this.type = 'text',
+    this.type = ChatMessageContentType.text,
     this.imageUrl,
     this.imageRemoteSource,
     DateTime? createdAt,
@@ -45,9 +47,9 @@ class ChatMessageEntity {
   final String id;
   final String conversationId;
   final String message;
-  final String role;
+  final ChatMessageRole role;
   final bool isFromBot;
-  final String type;
+  final ChatMessageContentType type;
   /// Đường dẫn file cục bộ (ưu tiên hiển thị) hoặc URL tạm nếu chưa tải xong.
   final String? imageUrl;
   /// Payload gốc từ SSE (URL / data-uri / base64) để gửi lại API khi cần.
@@ -68,9 +70,9 @@ ChatMessageEntity _readInlineChatMessage(BinaryReader reader) {
     id: reader.readString(),
     conversationId: reader.readString(),
     message: reader.readString(),
-    role: reader.readString(),
+    role: ChatMessageRole.fromWire(reader.readString()),
     isFromBot: reader.readBool(),
-    type: reader.readString(),
+    type: ChatMessageContentType.fromWire(reader.readString()),
     imageUrl: _readOptStr(reader),
     imageRemoteSource: _readOptStr(reader),
     createdAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
@@ -82,9 +84,9 @@ void _writeInlineChatMessage(BinaryWriter writer, ChatMessageEntity message) {
   writer.writeString(message.id);
   writer.writeString(message.conversationId);
   writer.writeString(message.message);
-  writer.writeString(message.role);
+  writer.writeString(message.role.wireValue);
   writer.writeBool(message.isFromBot);
-  writer.writeString(message.type);
+  writer.writeString(message.type.wireValue);
   _writeOptStr(writer, message.imageUrl);
   _writeOptStr(writer, message.imageRemoteSource);
   writer.writeInt(message.createdAt.millisecondsSinceEpoch);
@@ -150,9 +152,9 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessageEntity> {
       id: reader.readString(),
       conversationId: reader.readString(),
       message: reader.readString(),
-      role: reader.readString(),
+      role: ChatMessageRole.fromWire(reader.readString()),
       isFromBot: reader.readBool(),
-      type: reader.readString(),
+      type: ChatMessageContentType.fromWire(reader.readString()),
       imageUrl: _readOptStr(reader),
       imageRemoteSource: _readOptStr(reader),
       createdAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
@@ -165,9 +167,9 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessageEntity> {
     writer.writeString(obj.id);
     writer.writeString(obj.conversationId);
     writer.writeString(obj.message);
-    writer.writeString(obj.role);
+    writer.writeString(obj.role.wireValue);
     writer.writeBool(obj.isFromBot);
-    writer.writeString(obj.type);
+    writer.writeString(obj.type.wireValue);
     _writeOptStr(writer, obj.imageUrl);
     _writeOptStr(writer, obj.imageRemoteSource);
     writer.writeInt(obj.createdAt.millisecondsSinceEpoch);

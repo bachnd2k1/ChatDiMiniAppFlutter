@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/database/conversation_entities.dart';
 import '../../core/database/local_db.dart';
+import '../models/chat_message_enums.dart';
 import '../models/ui_chat_message.dart';
 
 class ConversationLocalRepository {
@@ -47,9 +48,9 @@ class ConversationLocalRepository {
       id: msgId,
       conversationId: conversationId,
       message: text,
-      role: 'user',
+      role: ChatMessageRole.user,
       isFromBot: false,
-      type: 'text',
+      type: ChatMessageContentType.text,
     );
     await _m.put(entity.id, entity);
 
@@ -74,9 +75,9 @@ class ConversationLocalRepository {
   Future<void> upsertAssistantMessage({
     required String conversationId,
     required String messageId,
-    required String role,
+    required ChatMessageRole role,
     String text = '',
-    String type = 'text',
+    ChatMessageContentType type = ChatMessageContentType.text,
     String? imageUrl,
     String? imageRemoteSource,
   }) async {
@@ -153,7 +154,9 @@ class ConversationLocalRepository {
     final userMessages =
     conversation.messages.where((m) => !m.isFromBot).toList();
     final row = userMessages.last;
-    if (row.type == 'image' && (row.message.trim().isEmpty)) return '[Image]';
+    if (row.type == ChatMessageContentType.image && row.message.trim().isEmpty) {
+      return '[Image]';
+    }
     final text = row.message.trim();
     return text.isEmpty ? 'No message' : text;
   }

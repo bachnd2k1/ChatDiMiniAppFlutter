@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' hide Category;
 import 'package:uuid/uuid.dart';
 
 import '../data/models/api_message_turn.dart';
+import '../data/models/chat_message_enums.dart';
 import '../data/models/category.dart';
 import '../data/models/character.dart';
 import '../data/models/image_style.dart';
@@ -163,7 +164,7 @@ class ChatProvider extends ChangeNotifier {
       .map(
         (m) => ApiMessageTurn(
           content: _serializedModelContent(m),
-          role: m.isUser ? 'user' : 'assistant',
+          role: m.role,
         ),
       )
       .toList();
@@ -184,22 +185,21 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void _onServerEvent(Map<String, dynamic> data) {
-    if (data.containsKey('type') && '${data['type']}' == 'error-reset') {
-      return;
-    }
-    switch ('${data['type'] ?? ''}') {
-      case 'start':
+    switch (SseEventType.fromPayload(data)) {
+      case SseEventType.errorReset:
+        return;
+      case SseEventType.start:
         final sid = '${data['id'] ?? ''}'.trim();
         if (sid.isEmpty) break;
         sseAssistantMessageId = sid;
         streamingBubble = UiChatMessage(
           id: sid,
           content: '',
-          role: 'assistant',
+          role: ChatMessageRole.assistant,
         );
         notifyListeners();
         break;
-      case 'delta':
+      case SseEventType.delta:
         if (streamingBubble == null || sseAssistantMessageId == null) break;
         final piece = '${data['content'] ?? ''}';
         streamingBubble = streamingBubble!.copyWith(
@@ -207,7 +207,7 @@ class ChatProvider extends ChangeNotifier {
         );
         notifyListeners();
         break;
-      case 'delta-text-to-image':
+      case SseEventType.deltaTextToImage:
         if (streamingBubble == null || sseAssistantMessageId == null) break;
         final payload = '${data['content'] ?? ''}';
         streamingBubble = streamingBubble!.copyWith(
@@ -217,11 +217,12 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
         unawaited(_materializeStreamingImage(payload));
         break;
-      case 'stop':
+      case SseEventType.stop:
         unawaited(_finalizeAssistantMessage());
         break;
-      default:
+      case SseEventType.unknown:
         debugPrint('[chat] sse $data');
+        break;
     }
   }
 
@@ -273,7 +274,7 @@ class ChatProvider extends ChangeNotifier {
         messageId: mid,
         role: bubble.role,
         text: bubble.content,
-        type: hasImage ? 'image' : 'text',
+        type: hasImage ? ChatMessageContentType.image : ChatMessageContentType.text,
         imageUrl: hasImage ? pathOut : null,
         imageRemoteSource: hasImage ? remoteStored : null,
       );
