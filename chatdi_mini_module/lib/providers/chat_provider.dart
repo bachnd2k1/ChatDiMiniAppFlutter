@@ -42,7 +42,6 @@ class ChatProvider extends ChangeNotifier {
   List<ImageStyle> imageStyles = [];
 
   UiChatMessage? streamingBubble;
-  String? sseAssistantMessageId;
 
   ImageStyle? selectedStyle;
   bool isSending = false;
@@ -76,13 +75,11 @@ class ChatProvider extends ChangeNotifier {
   bool get sendEnabled =>
       (_session?.canSendMessages ?? false) &&
       !isSending &&
-      sseAssistantMessageId == null &&
       streamingBubble == null;
 
   bool get canStopStream =>
       _session?.sessionId?.isNotEmpty == true &&
-      (sseAssistantMessageId?.isNotEmpty == true ||
-          streamingBubble?.id.isNotEmpty == true);
+      streamingBubble?.id.isNotEmpty == true;
 
   List<UiChatMessage> get visibleMessages =>
       [...persisted, if (streamingBubble != null) streamingBubble!];
@@ -144,7 +141,7 @@ class ChatProvider extends ChangeNotifier {
   Future<void> stopGeneration() async {
     final session = _session;
     final sid = session?.sessionId;
-    final mid = sseAssistantMessageId ?? streamingBubble?.id;
+    final mid = streamingBubble?.id;
     if (sid == null || sid.isEmpty || mid == null || mid.isEmpty) return;
     try {
       await _chatApi.stopGeneration(
@@ -191,7 +188,6 @@ class ChatProvider extends ChangeNotifier {
       case SseEventType.start:
         final sid = '${data['id'] ?? ''}'.trim();
         if (sid.isEmpty) break;
-        sseAssistantMessageId = sid;
         streamingBubble = UiChatMessage(
           id: sid,
           content: '',
@@ -200,7 +196,7 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
         break;
       case SseEventType.delta:
-        if (streamingBubble == null || sseAssistantMessageId == null) break;
+        if (streamingBubble == null) break;
         final piece = '${data['content'] ?? ''}';
         streamingBubble = streamingBubble!.copyWith(
           content: streamingBubble!.content + piece,
@@ -208,7 +204,7 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
         break;
       case SseEventType.deltaTextToImage:
-        if (streamingBubble == null || sseAssistantMessageId == null) break;
+        if (streamingBubble == null) break;
         final payload = '${data['content'] ?? ''}';
         streamingBubble = streamingBubble!.copyWith(
           imageUrl: payload,
@@ -227,10 +223,10 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> _materializeStreamingImage(String ssePayload) async {
-    final mid = sseAssistantMessageId;
-    if (mid == null) return;
+    final mid = streamingBubble?.id;
+    if (mid == null || mid.isEmpty) return;
     final path = await _imageStorage.saveSsePayload(ssePayload, messageId: mid);
-    if (path == null || sseAssistantMessageId != mid) return;
+    if (path == null || streamingBubble?.id != mid) return;
     final b = streamingBubble;
     if (b == null || b.id != mid) return;
     streamingBubble = b.copyWith(imageUrl: path);
@@ -239,7 +235,7 @@ class ChatProvider extends ChangeNotifier {
 
   Future<void> _finalizeAssistantMessage() async {
     final bubble = streamingBubble;
-    final mid = sseAssistantMessageId;
+    final mid = bubble?.id;
     if (bubble != null && mid != null && mid.isNotEmpty) {
       final remoteSeed = bubble.imageRemoteSource ?? bubble.imageUrl;
       final trimmedRemote = remoteSeed?.trim() ?? '';
@@ -281,7 +277,6 @@ class ChatProvider extends ChangeNotifier {
     }
 
     streamingBubble = null;
-    sseAssistantMessageId = null;
     persisted = _local.uiMessages(conversationId);
     notifyListeners();
   }
