@@ -23,6 +23,6 @@ App sử dụng:
 ### 3. Data
 - API Service (REST)
 - SSE Service
-- Local Database (Hive / Drift)
+- Local Database (Isar)
 
 ---

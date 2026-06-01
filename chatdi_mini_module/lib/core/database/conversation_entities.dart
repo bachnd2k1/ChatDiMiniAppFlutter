@@ -1,5 +1,3 @@
-import 'package:hive/hive.dart';
-
 import '../../data/models/chat_message_enums.dart';
 
 /// Local conversation row (see docs/05-models Realm section).
@@ -14,7 +12,7 @@ class ConversationEntity {
     this.messageCount = 0,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : messages = List.unmodifiable(messages ?? const <String>[]),
+  })  : messages = List.unmodifiable(messages ?? const <ChatMessageEntity>[]),
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -56,123 +54,4 @@ class ChatMessageEntity {
   final String? imageRemoteSource;
   final DateTime createdAt;
   final DateTime updatedAt;
-}
-
-String? _readOptStr(BinaryReader r) => r.readBool() ? r.readString() : null;
-
-void _writeOptStr(BinaryWriter w, String? v) {
-  w.writeBool(v != null);
-  if (v != null) w.writeString(v);
-}
-
-ChatMessageEntity _readInlineChatMessage(BinaryReader reader) {
-  return ChatMessageEntity(
-    id: reader.readString(),
-    conversationId: reader.readString(),
-    message: reader.readString(),
-    role: ChatMessageRole.fromWire(reader.readString()),
-    isFromBot: reader.readBool(),
-    type: ChatMessageContentType.fromWire(reader.readString()),
-    imageUrl: _readOptStr(reader),
-    imageRemoteSource: _readOptStr(reader),
-    createdAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-    updatedAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-  );
-}
-
-void _writeInlineChatMessage(BinaryWriter writer, ChatMessageEntity message) {
-  writer.writeString(message.id);
-  writer.writeString(message.conversationId);
-  writer.writeString(message.message);
-  writer.writeString(message.role.wireValue);
-  writer.writeBool(message.isFromBot);
-  writer.writeString(message.type.wireValue);
-  _writeOptStr(writer, message.imageUrl);
-  _writeOptStr(writer, message.imageRemoteSource);
-  writer.writeInt(message.createdAt.millisecondsSinceEpoch);
-  writer.writeInt(message.updatedAt.millisecondsSinceEpoch);
-}
-
-List<ChatMessageEntity> _readMessageList(BinaryReader reader) {
-  final len = reader.readInt();
-  final out = <ChatMessageEntity>[];
-  for (var i = 0; i < len; i++) {
-    out.add(_readInlineChatMessage(reader));
-  }
-  return out;
-}
-
-void _writeMessageList(BinaryWriter writer, List<ChatMessageEntity> values) {
-  writer.writeInt(values.length);
-  for (final v in values) {
-    _writeInlineChatMessage(writer, v);
-  }
-}
-
-class ConversationAdapter extends TypeAdapter<ConversationEntity> {
-  @override
-  final int typeId = 11;
-
-  @override
-  ConversationEntity read(BinaryReader reader) {
-    return ConversationEntity(
-      id: reader.readString(),
-      title: _readOptStr(reader),
-      topic: _readOptStr(reader),
-      characterId: _readOptStr(reader),
-      characterName: _readOptStr(reader),
-      messages: _readMessageList(reader),
-      messageCount: reader.readInt(),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, ConversationEntity obj) {
-    writer.writeString(obj.id);
-    _writeOptStr(writer, obj.title);
-    _writeOptStr(writer, obj.topic);
-    _writeOptStr(writer, obj.characterId);
-    _writeOptStr(writer, obj.characterName);
-    _writeMessageList(writer, obj.messages);
-    writer.writeInt(obj.messageCount);
-    writer.writeInt(obj.createdAt.millisecondsSinceEpoch);
-    writer.writeInt(obj.updatedAt.millisecondsSinceEpoch);
-  }
-}
-
-class ChatMessageAdapter extends TypeAdapter<ChatMessageEntity> {
-  @override
-  final int typeId = 12;
-
-  @override
-  ChatMessageEntity read(BinaryReader reader) {
-    return ChatMessageEntity(
-      id: reader.readString(),
-      conversationId: reader.readString(),
-      message: reader.readString(),
-      role: ChatMessageRole.fromWire(reader.readString()),
-      isFromBot: reader.readBool(),
-      type: ChatMessageContentType.fromWire(reader.readString()),
-      imageUrl: _readOptStr(reader),
-      imageRemoteSource: _readOptStr(reader),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, ChatMessageEntity obj) {
-    writer.writeString(obj.id);
-    writer.writeString(obj.conversationId);
-    writer.writeString(obj.message);
-    writer.writeString(obj.role.wireValue);
-    writer.writeBool(obj.isFromBot);
-    writer.writeString(obj.type.wireValue);
-    _writeOptStr(writer, obj.imageUrl);
-    _writeOptStr(writer, obj.imageRemoteSource);
-    writer.writeInt(obj.createdAt.millisecondsSinceEpoch);
-    writer.writeInt(obj.updatedAt.millisecondsSinceEpoch);
-  }
 }

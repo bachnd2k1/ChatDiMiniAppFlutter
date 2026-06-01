@@ -1,4 +1,4 @@
-/// Wire values for REST `conversation[].role` and local Hive `role`.
+/// Wire values for REST `conversation[].role` and local Isar `role`.
 enum ChatMessageRole {
   user,
   assistant;

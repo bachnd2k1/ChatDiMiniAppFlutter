@@ -11,7 +11,7 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final bullets = [
       'Kết nối realtime qua SSE trước khi có thể gửi tin (giống bản RN).',
-      'Lịch sử được lưu cục bộ bằng Hive — không có HTTP riêng cho History.',
+      'Lịch sử được lưu cục bộ bằng Isar — không có HTTP riêng cho History.',
       'Thư mục instruction/ mô tả kiến trúc; docs/ chứa hợp đồng API.',
     ];
 

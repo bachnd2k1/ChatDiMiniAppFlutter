@@ -1,18 +1,18 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:isar_community/isar.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/database/conversation_entities.dart';
+import '../../core/database/conversation_isar.dart';
 import '../../core/database/local_db.dart';
 import '../models/chat_message_enums.dart';
 import '../models/ui_chat_message.dart';
 
 class ConversationLocalRepository {
-  Box<ConversationEntity> get _c => conversationsBox();
-  Box<ChatMessageEntity> get _m => messagesBox();
+  Isar get _db => isar;
 
   List<ConversationEntity> listSorted() {
-    final list = _c.values.toList();
-    list.sort((a, b) => (b.updatedAt).compareTo(a.updatedAt));
+    final list = _db.conversationIsars.where().findAllSync().map(conversationFromIsar).toList();
+    list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return list;
   }
 
@@ -29,10 +29,15 @@ class ConversationLocalRepository {
   }
 
   Future<void> upsertConversation(ConversationEntity e) async {
-    await _c.put(e.id, e);
+    await _db.writeTxn(() async {
+      await _db.conversationIsars.put(conversationToIsar(e));
+    });
   }
 
-  ConversationEntity? getConversation(String id) => _c.get(id);
+  ConversationEntity? getConversation(String id) {
+    final row = _db.conversationIsars.getByIdSync(id);
+    return row == null ? null : conversationFromIsar(row);
+  }
 
   Future<String> appendUserMessage({
     required String conversationId,
@@ -52,9 +57,8 @@ class ConversationLocalRepository {
       isFromBot: false,
       type: ChatMessageContentType.text,
     );
-    await _m.put(entity.id, entity);
 
-    final existing = _c.get(conversationId);
+    final existing = getConversation(conversationId);
     final now = DateTime.now();
     final updated = ConversationEntity(
       id: conversationId,
@@ -67,7 +71,11 @@ class ConversationLocalRepository {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
-    await _c.put(conversationId, updated);
+
+    await _db.writeTxn(() async {
+      await _db.chatMessageIsars.put(chatMessageToIsar(entity));
+      await _db.conversationIsars.put(conversationToIsar(updated));
+    });
     return msgId;
   }
 
@@ -82,7 +90,8 @@ class ConversationLocalRepository {
     String? imageRemoteSource,
   }) async {
     final now = DateTime.now();
-    final prev = _m.get(messageId);
+    final prevRow = _db.chatMessageIsars.getByIdSync(messageId);
+    final prev = prevRow == null ? null : chatMessageFromIsar(prevRow);
     final mergedText = prev == null
         ? text
         : ((prev.message + text).isEmpty ? prev.message : (prev.message + text));
@@ -102,10 +111,13 @@ class ConversationLocalRepository {
       updatedAt: now,
     );
 
-    await _m.put(messageId, next);
-
-    final conv = _c.get(conversationId);
-    if (conv == null) return;
+    final conv = getConversation(conversationId);
+    if (conv == null) {
+      await _db.writeTxn(() async {
+        await _db.chatMessageIsars.put(chatMessageToIsar(next));
+      });
+      return;
+    }
 
     final mergedMessages = [...conv.messages];
     final existingMessageIdx = mergedMessages.indexWhere((m) => m.id == messageId);
@@ -115,26 +127,33 @@ class ConversationLocalRepository {
       mergedMessages.add(next);
     }
 
-    await _c.put(
-      conversationId,
-      ConversationEntity(
-        id: conv.id,
-        title: conv.title,
-        topic: conv.topic,
-        characterId: conv.characterId,
-        characterName: conv.characterName,
-        messages: mergedMessages,
-        messageCount: mergedMessages.length,
-        createdAt: conv.createdAt,
-        updatedAt: now,
-      ),
+    final updatedConv = ConversationEntity(
+      id: conv.id,
+      title: conv.title,
+      topic: conv.topic,
+      characterId: conv.characterId,
+      characterName: conv.characterName,
+      messages: mergedMessages,
+      messageCount: mergedMessages.length,
+      createdAt: conv.createdAt,
+      updatedAt: now,
     );
+
+    await _db.writeTxn(() async {
+      await _db.chatMessageIsars.put(chatMessageToIsar(next));
+      await _db.conversationIsars.put(conversationToIsar(updatedConv));
+    });
   }
 
   List<UiChatMessage> uiMessages(String conversationId) {
-    final rows = _c.get(conversationId)?.messages.toList() ??
-        _m.values.where((x) => x.conversationId == conversationId).toList();
-    rows.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final conv = getConversation(conversationId);
+    final rows = conv?.messages.toList() ??
+        _db.chatMessageIsars
+            .where()
+            .conversationIdEqualTo(conversationId)
+            .findAllSync()
+            .map(chatMessageFromIsar)
+            .toList();
     return rows
         .map(
           (e) => UiChatMessage(
@@ -151,8 +170,7 @@ class ConversationLocalRepository {
 
   String lastMessagePreview(ConversationEntity conversation) {
     if (conversation.messages.isEmpty) return 'No message';
-    final userMessages =
-    conversation.messages.where((m) => !m.isFromBot).toList();
+    final userMessages = conversation.messages.where((m) => !m.isFromBot).toList();
     final row = userMessages.last;
     if (row.type == ChatMessageContentType.image && row.message.trim().isEmpty) {
       return '[Image]';
@@ -162,15 +180,20 @@ class ConversationLocalRepository {
   }
 
   Future<void> deleteConversation(String conversationId) async {
-    final ids =
-        _m.values.where((msg) => msg.conversationId == conversationId).map((e) => e.id).toList();
-    await _m.deleteAll(ids);
-    await _c.delete(conversationId);
+    await _db.writeTxn(() async {
+      await _db.chatMessageIsars
+          .where()
+          .conversationIdEqualTo(conversationId)
+          .deleteAll();
+      await _db.conversationIsars.deleteById(conversationId);
+    });
   }
 
   Future<void> clearAll() async {
-    await _m.clear();
-    await _c.clear();
+    await _db.writeTxn(() async {
+      await _db.chatMessageIsars.clear();
+      await _db.conversationIsars.clear();
+    });
   }
 
   String _trimTitle(String text) {

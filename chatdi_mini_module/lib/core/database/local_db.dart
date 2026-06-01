@@ -1,36 +1,27 @@
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:isar_community/isar.dart';
+import 'package:path_provider/path_provider.dart';
 
-import 'conversation_entities.dart';
+import 'conversation_isar.dart';
 
-const _conversationsBox = 'conversations';
-const _messagesBox = 'messages';
+const _dbName = 'chatdi_local';
 
+Isar? _isar;
 
 Future<void> initLocalDb() async {
-  await Hive.initFlutter();
+  if (_isar?.isOpen == true) return;
 
-  try {
-    if (Hive.isBoxOpen(_conversationsBox)) {
-      await Hive.box(_conversationsBox).close();
-    }
-    await Hive.deleteBoxFromDisk(_conversationsBox);
-  } catch (_) {}
-
-  try {
-    if (Hive.isBoxOpen(_messagesBox)) {
-      await Hive.box(_messagesBox).close();
-    }
-    await Hive.deleteBoxFromDisk(_messagesBox);
-  } catch (_) {}
-
-  if (!Hive.isAdapterRegistered(11)) Hive.registerAdapter(ConversationAdapter());
-  if (!Hive.isAdapterRegistered(12)) Hive.registerAdapter(ChatMessageAdapter());
-  await Hive.openBox<ConversationEntity>(_conversationsBox);
-  await Hive.openBox<ChatMessageEntity>(_messagesBox);
+  final dir = await getApplicationDocumentsDirectory();
+  _isar = await Isar.open(
+    [ConversationIsarSchema, ChatMessageIsarSchema],
+    directory: dir.path,
+    name: _dbName,
+  );
 }
 
-Box<ConversationEntity> conversationsBox() =>
-    Hive.box<ConversationEntity>(_conversationsBox);
-
-Box<ChatMessageEntity> messagesBox() => Hive.box<ChatMessageEntity>(_messagesBox);
+Isar get isar {
+  final db = _isar;
+  if (db == null || !db.isOpen) {
+    throw StateError('Local DB not initialized. Call initLocalDb() first.');
+  }
+  return db;
+}
