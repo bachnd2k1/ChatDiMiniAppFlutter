@@ -5,7 +5,11 @@ import 'api_client.dart';
 
 typedef SseConnectionHandler = void Function(String sessionId);
 typedef SseMessageHandler = void Function(Map<String, dynamic> data);
-typedef SseErrorHandler = void Function(Object error, StackTrace st);
+/// Stream ended or failed to open; [error] is null when the server closed cleanly.
+typedef SseConnectionLostHandler = void Function(
+  Object? error,
+  StackTrace? stackTrace,
+);
 
 /// Parses Server-Sent Events from a byte stream (see docs/04-sse.md).
 class SseService {
@@ -18,16 +22,24 @@ class SseService {
   Future<void> start({
     required SseConnectionHandler onConnection,
     required SseMessageHandler onMessage,
-    SseErrorHandler? onError,
+    SseConnectionLostHandler? onConnectionLost,
   }) async {
     await stop();
     StreamedSSE sse;
     try {
       sse = await _client.openSse();
     } catch (e, st) {
-      onError?.call(e, st);
+      onConnectionLost?.call(e, st);
       return;
     }
+    var ended = false;
+    void end([Object? error, StackTrace? stackTrace]) {
+      if (ended) return;
+      ended = true;
+      _sub = null;
+      onConnectionLost?.call(error, stackTrace);
+    }
+
     var buffer = '';
     _sub = sse.stream.listen(
       (chunk) {
@@ -51,7 +63,8 @@ class SseService {
           _dispatchBlock(raw, onConnection, onMessage);
         }
       },
-      onError: (e, st) => onError?.call(e, st),
+      onError: (e, st) => end(e, st),
+      onDone: () => end(),
       cancelOnError: false,
     );
   }

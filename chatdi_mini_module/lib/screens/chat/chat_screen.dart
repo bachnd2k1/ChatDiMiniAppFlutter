@@ -27,15 +27,54 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   late final TextEditingController _controller;
+  final ScrollController _scrollController = ScrollController();
   ChatProvider? _chat;
+  int _lastVisibleCount = 0;
 
   void _bind(ChatProvider chat) {
     chat.removeListener(_onChatTick);
     chat.addListener(_onChatTick);
   }
 
+  void _scrollToBottom({bool animated = false, bool ensureExtent = false}) {
+    void scrollOnce() {
+      if (!mounted || !_scrollController.hasClients) return;
+      final max = _scrollController.position.maxScrollExtent;
+      if (animated) {
+        _scrollController.animateTo(
+          max,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(max);
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      scrollOnce();
+      if (ensureExtent) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => scrollOnce());
+      }
+    });
+  }
+
   void _onChatTick() {
+    final chat = _chat;
+    if (chat == null) {
+      setState(() {});
+      return;
+    }
+    final count = chat.visibleMessages.length;
+    final streaming = chat.streamingBubble != null;
+    final grew = count > _lastVisibleCount;
+    _lastVisibleCount = count;
     setState(() {});
+    if (streaming) {
+      _scrollToBottom();
+    } else if (grew) {
+      _scrollToBottom(ensureExtent: count > 1);
+    }
   }
 
   @override
@@ -55,7 +94,13 @@ class _ChatScreenState extends State<ChatScreen> {
       _bind(chat);
       _chat = chat;
       await chat.mount(widget.args, context.read<SessionProvider>());
-      if (mounted) setState(() {});
+      if (mounted) {
+        _lastVisibleCount = chat.visibleMessages.length;
+        setState(() {});
+        if (_lastVisibleCount > 0) {
+          _scrollToBottom(ensureExtent: true);
+        }
+      }
     });
   }
 
@@ -67,6 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
       c.unmount();
     }
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -171,6 +217,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 Expanded(
                   child: ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(12),
                     itemCount: chat.visibleMessages.length,
                     itemBuilder: (ctx, i) {
@@ -249,6 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) {
       _controller.clear();
       setState(() {});
+      _scrollToBottom(ensureExtent: true);
     }
   }
 }

@@ -86,14 +86,23 @@ class SessionProvider extends ChangeNotifier {
         notifyListeners();
       },
       onMessage: _onSsePayload,
-      onError: (Object error, StackTrace stackTrace) {
-        debugPrint('[sse-error] $error $stackTrace');
-        isConnected = false;
-        sessionId = null;
-        notifyListeners();
-        _scheduleReconnect();
+      onConnectionLost: (error, stackTrace) {
+        if (error != null) {
+          debugPrint('[sse-lost] $error $stackTrace');
+        } else {
+          debugPrint('[sse-lost] stream closed');
+        }
+        _handleSseDisconnect();
       },
     );
+  }
+
+  void _handleSseDisconnect() {
+    if (!_lifecycleActive) return;
+    isConnected = false;
+    sessionId = null;
+    notifyListeners();
+    _scheduleReconnect();
   }
 
   void _scheduleReconnect() {
