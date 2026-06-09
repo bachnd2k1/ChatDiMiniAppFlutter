@@ -26,11 +26,9 @@ class ChatMessageBubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (message.content.isNotEmpty)
-                Text(message.content),
+              if (message.content.isNotEmpty) Text(message.content),
 
-              if (message.imageUrl != null &&
-                  message.imageUrl!.isNotEmpty)
+              if (message.imageUrl != null && message.imageUrl!.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.only(
                     top: message.content.isNotEmpty ? 8 : 0,
@@ -45,30 +43,33 @@ class ChatMessageBubble extends StatelessWidget {
 
     // User message
     if (message.isUser) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: bubble,
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Align(alignment: Alignment.centerRight, child: bubble),
       );
     }
 
     // Bot message
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              'assets/ic_chatdi.png',
-              width: 32,
-              height: 32,
-              fit: BoxFit.cover,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipOval(
+              child: Image.asset(
+                'assets/ic_chatdi.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          bubble,
-        ],
+            const SizedBox(width: 8),
+            bubble,
+          ],
+        ),
       ),
     );
   }

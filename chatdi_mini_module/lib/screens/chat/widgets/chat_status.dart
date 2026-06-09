@@ -4,42 +4,16 @@ import 'package:provider/provider.dart';
 import '../../../providers/chat_provider.dart';
 import '../../../providers/session_provider.dart';
 
-class ChatHeader extends StatelessWidget implements PreferredSizeWidget {
-  const ChatHeader({super.key, required this.chat});
+class ChatStop extends StatefulWidget {
+  const ChatStop({super.key, required this.chat});
 
   final ChatProvider chat;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 40);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      title: const Text('Chat'),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(40),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: _ChatSseStatus(),
-          ),
-        ),
-      ),
-    );
-  }
+  State<ChatStop> createState() => _ChatStopState();
 }
 
-class ChatStopAction extends StatefulWidget {
-  const ChatStopAction({super.key, required this.chat});
-
-  final ChatProvider chat;
-
-  @override
-  State<ChatStopAction> createState() => _ChatStopActionState();
-}
-
-class _ChatStopActionState extends State<ChatStopAction> {
+class _ChatStopState extends State<ChatStop> {
   bool _canStop = false;
 
   @override
@@ -71,16 +45,22 @@ class _ChatStopActionState extends State<ChatStopAction> {
   }
 }
 
-class _ChatSseStatus extends StatelessWidget {
+class ChatSseStatus extends StatelessWidget {
+  const ChatSseStatus({super.key});
+
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionProvider>();
     final connected =
         session.isConnected && (session.sessionId?.isNotEmpty ?? false);
 
-    return Text(
-      connected ? 'SSE: connected' : 'SSE: waiting…',
-      style: Theme.of(context).textTheme.bodySmall,
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        color: connected ? Colors.green : Colors.red,
+        shape: BoxShape.circle,
+      ),
     );
   }
 }

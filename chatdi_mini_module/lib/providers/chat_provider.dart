@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../data/models/api_message_turn.dart';
 import '../data/models/chat_message_enums.dart';
@@ -36,7 +37,7 @@ class ChatProvider extends ChangeNotifier {
 
   Category? topicCategory;
   CharacterModel? character;
-  bool imageTab = false;
+  bool isImageTab = false;
 
   List<UiChatMessage> persisted = [];
   List<ImageStyle> imageStyles = [];
@@ -46,12 +47,16 @@ class ChatProvider extends ChangeNotifier {
   ImageStyle? selectedStyle;
   bool isSending = false;
 
+  final ImagePicker _picker = ImagePicker();
+
+  XFile? selectedImage;
+
   Future<void> mount(ChatLaunchArgs launch, SessionProvider session) async {
     args = launch;
     _session = session;
     topicCategory = launch.topicCategory ?? launch.effectiveCategory;
     character = launch.character;
-    imageTab = launch.tabIndex == 1;
+    isImageTab = launch.tabIndex == 1;
     conversationId = launch.conversationId ?? const Uuid().v4();
     persisted = _local.uiMessages(conversationId);
 
@@ -72,7 +77,7 @@ class ChatProvider extends ChangeNotifier {
     _session = null;
   }
 
-  bool get sendEnabled =>
+  bool get isSendEnabled =>
       (_session?.canSendMessages ?? false) &&
       !isSending &&
       streamingBubble == null;
@@ -85,12 +90,12 @@ class ChatProvider extends ChangeNotifier {
       [...persisted, if (streamingBubble != null) streamingBubble!];
 
   void setTabAsk() {
-    imageTab = false;
+    isImageTab = false;
     notifyListeners();
   }
 
   void setTabImage() {
-    imageTab = true;
+    isImageTab = true;
     notifyListeners();
   }
 
@@ -153,7 +158,7 @@ class ChatProvider extends ChangeNotifier {
 
   SendMessageVariant _pickVariant() {
     if (character != null) return SendMessageVariant.character;
-    if (imageTab) return SendMessageVariant.textToImage;
+    if (isImageTab) return SendMessageVariant.textToImage;
     return SendMessageVariant.ask;
   }
 
@@ -278,6 +283,18 @@ class ChatProvider extends ChangeNotifier {
 
     streamingBubble = null;
     persisted = _local.uiMessages(conversationId);
+    notifyListeners();
+  }
+
+  Future<void> pickImages() async {
+    selectedImage = await _picker.pickImage(
+      source: ImageSource.gallery,
+    );
+    notifyListeners();
+  }
+
+  void clearImages() {
+    selectedImage = null;
     notifyListeners();
   }
 }

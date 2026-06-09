@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/widget/header_view.dart';
 import '../../data/repositories/catalog_repository.dart';
 import '../../data/repositories/chat_api_repository.dart';
 import '../../data/repositories/conversation_local_repository.dart';
@@ -8,10 +9,10 @@ import '../../data/services/chat_image_storage.dart';
 import '../../providers/chat_launch_args.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
-import 'widgets/chat_header.dart';
 import 'widgets/chat_input.dart';
 import 'widgets/chat_message_list.dart';
 import 'widgets/chat_style_selector.dart';
+import 'widgets/chat_status.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.args});
@@ -19,9 +20,9 @@ class ChatScreen extends StatefulWidget {
   final ChatLaunchArgs args;
 
   static Future<void> open(BuildContext context, ChatLaunchArgs args) {
-    return Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (_) => ChatScreen(args: args)),
-    );
+    return Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute(builder: (_) => ChatScreen(args: args)));
   }
 
   @override
@@ -82,9 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    final seed = widget.args.initialDraft ??
-        widget.args.promptFromGenerator ??
-        '';
+    final seed = widget.args.initialDraft ?? widget.args.promptFromGenerator ?? '';
     _controller = TextEditingController(text: seed);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final chat = ChatProvider(
@@ -123,26 +122,38 @@ class _ChatScreenState extends State<ChatScreen> {
     final chat = _chat;
 
     return Scaffold(
-      appBar: chat == null
-          ? null
-          : ChatHeader(chat: chat),
       body: chat == null
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                ChatStyleSelector(chat: chat),
-                Expanded(
-                  child: ChatMessageList(
-                    chat: chat,
-                    scrollController: _scrollController,
+          : SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  HeaderView(
+                    leftWidget: IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    centerWidget: ChatStyleSelector(chat: chat),
+                    rightWidgets: [
+                      ChatSseStatus()
+                    ],
                   ),
-                ),
-                ChatInput(
-                  chat: chat,
-                  controller: _controller,
-                  onSend: () => _send(chat),
-                ),
-              ],
+                  Expanded(
+                    child: ChatMessageList(
+                      chat: chat,
+                      scrollController: _scrollController,
+                    ),
+                  ),
+                  ChatInput(
+                    chat: chat,
+                    controller: _controller,
+                    onSend: () => _send(chat),
+                    onPickImages: () => chat.pickImages()
+                  ),
+                ],
+              ),
             ),
     );
   }
