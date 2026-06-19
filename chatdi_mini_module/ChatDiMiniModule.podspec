@@ -12,11 +12,11 @@ Pod::Spec.new do |s|
     :tag => s.version.to_s
   }
 
-  s.source_files = 'ios/Classes/**/*.{swift,h,m}'
+  s.source_files = 'chatdi_mini_module/ios/Classes/**/*.{swift,h,m}'
 
   s.vendored_frameworks =
-    'Release/*.xcframework',
-    'Release/*.framework'
+    'chatdi_mini_module/Release/*.xcframework',
+    'chatdi_mini_module/Release/*.framework'
 
   s.requires_arc = true
   s.static_framework = true
