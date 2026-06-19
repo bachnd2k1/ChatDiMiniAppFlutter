@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:uuid/uuid.dart';
+import '../core/extension/list+ext.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/models/api_message_turn.dart';
@@ -42,6 +43,11 @@ class ChatProvider extends ChangeNotifier {
   List<UiChatMessage> persisted = [];
   List<ImageStyle> imageStyles = [];
 
+  // Paging
+  final int pageSize = 5;
+  bool hasMoreMessages = false;
+  bool isLoadingMore = false;
+
   UiChatMessage? streamingBubble;
 
   ImageStyle? selectedStyle;
@@ -58,7 +64,9 @@ class ChatProvider extends ChangeNotifier {
     character = launch.character;
     isImageTab = launch.tabIndex == 1;
     conversationId = launch.conversationId ?? const Uuid().v4();
-    persisted = _local.uiMessages(conversationId);
+    final page = _local.uiMessagesPage(conversationId, pageSize: pageSize);
+    persisted = page.items;
+    hasMoreMessages = page.hasMore;
 
     session.ssePayloadListener = _onServerEvent;
     await session.startChatLifecycle();
@@ -163,6 +171,7 @@ class ChatProvider extends ChangeNotifier {
   }
 
   List<ApiMessageTurn> _buildConversationPayload() => persisted
+      .takeLast(10)
       .map(
         (m) => ApiMessageTurn(
           content: _serializedModelContent(m),
@@ -282,8 +291,36 @@ class ChatProvider extends ChangeNotifier {
     }
 
     streamingBubble = null;
-    persisted = _local.uiMessages(conversationId);
+    // Refresh persisted messages: load last N (ensure we include the new one)
+    final fetchSize = persisted.isEmpty ? pageSize : persisted.length + 1;
+    final page = _local.uiMessagesPage(conversationId, pageSize: fetchSize);
+    persisted = page.items;
+    hasMoreMessages = page.hasMore;
     notifyListeners();
+  }
+
+  /// Load more older messages (prepend). Returns number of items loaded.
+  Future<int> loadMoreMessages() async {
+    if (isLoadingMore || !hasMoreMessages) return 0;
+    isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      // yield to allow a frame to render the loading indicator before heavy sync work
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      final before = persisted.isNotEmpty ? persisted.first.createdAt : null;
+      final page = _local.uiMessagesPage(conversationId, pageSize: pageSize, before: before);
+      final items = page.items;
+      if (items.isNotEmpty) {
+        persisted = [...items, ...persisted];
+      }
+      hasMoreMessages = page.hasMore;
+      return items.length;
+    } finally {
+      isLoadingMore = false;
+      notifyListeners();
+    }
   }
 
   Future<void> pickImages() async {

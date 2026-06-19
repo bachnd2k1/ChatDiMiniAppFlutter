@@ -7,6 +7,13 @@ import '../../core/database/local_db.dart';
 import '../models/chat_message_enums.dart';
 import '../models/ui_chat_message.dart';
 
+/// Paged UI messages result used by [ConversationLocalRepository].
+class UiMessagesPage {
+  final List<UiChatMessage> items;
+  final bool hasMore;
+  UiMessagesPage({required this.items, required this.hasMore});
+}
+
 class ConversationLocalRepository {
   Isar get _db => isar;
 
@@ -166,6 +173,60 @@ class ConversationLocalRepository {
           ),
         )
         .toList();
+  }
+
+  /// Returns a page of UI messages for [conversationId].
+  ///
+  /// - `pageSize` defaults to 20.
+  /// - If `before` is null, returns the most recent `pageSize` messages.
+  /// - If `before` is provided, returns up to `pageSize` messages older than `before`.
+  UiMessagesPage uiMessagesPage(
+    String conversationId, {
+    int pageSize = 20,
+    DateTime? before,
+  }) {
+    final conv = getConversation(conversationId);
+    final rows = conv?.messages.toList() ??
+        _db.chatMessageIsars
+            .where()
+            .conversationIdEqualTo(conversationId)
+            .findAllSync()
+            .map(chatMessageFromIsar)
+            .toList();
+
+    // Ensure chronological order (oldest -> newest)
+    rows.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    // Filter by `before` if provided
+    final filtered = (before == null)
+        ? rows
+        : rows.where((r) => r.createdAt.isBefore(before)).toList();
+
+    final total = filtered.length;
+    if (total == 0) {
+      return UiMessagesPage(items: [], hasMore: rows.isNotEmpty);
+    }
+
+    // Take the last `pageSize` items from filtered (the newest in that window)
+    final start = total <= pageSize ? 0 : total - pageSize;
+    final pageItems = filtered.sublist(start, total);
+
+    final hasMore = start > 0;
+
+    final ui = pageItems
+        .map(
+          (e) => UiChatMessage(
+            id: e.id,
+            content: e.message,
+            role: e.role,
+            imageUrl: e.imageUrl,
+            imageRemoteSource: e.imageRemoteSource,
+            createdAt: e.createdAt,
+          ),
+        )
+        .toList();
+
+    return UiMessagesPage(items: ui, hasMore: hasMore);
   }
 
   String lastMessagePreview(ConversationEntity conversation) {
